@@ -353,7 +353,7 @@ exports.startImmediateClass = async (req, res) => {
                     `, [instructor_id, subject_id]);
 
                     for (const student of students) {
-                        emailService.sendClassStartedEmail(student.email, student.name, subjectName, instructorName);
+                        emailService.sendClassStartedEmail(student.email, student.name, subjectName, instructorName, classId);
                     }
                 }
             } catch (notifyErr) {

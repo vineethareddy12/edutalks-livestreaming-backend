@@ -48,22 +48,44 @@ class BatchAllocationService {
                 `SELECT u.id, s.name as subject_name FROM users u
                  JOIN instructor_subjects isub ON u.id = isub.instructor_id
                  JOIN subjects s ON isub.subject_id = s.id
-                 WHERE isub.subject_id = ? AND u.is_active = 1`,
+                 WHERE isub.subject_id = ? AND u.is_active = 1
+                 ORDER BY u.id ASC`, // Order by ID for consistent rotation
                 [subjectId]
             );
 
             // CRITICAL: If no instructor is qualified for this subject yet, DO NOT create a stray batch.
-            // The student will remain unassigned for this subject until the Super Instructor runs "Distribute".
             if (eligibleInstructors.length === 0) {
                 console.log(`[BatchService] No qualified instructor for subject ${subjectId}. Skipping auto-allocation for student ${studentId}.`);
                 return;
             }
 
-            const instructorId = eligibleInstructors[0].id;
-            const subjectName = eligibleInstructors[0].subject_name;
+            // --- Round-Robin Selection Logic ---
+            let selectedInstructor = eligibleInstructors[0]; // Default to first
+
+            // Get the MOST RECENTLY CREATED batch for this subject to see who got it
+            const [lastBatch] = await this.pool.query(
+                'SELECT instructor_id FROM batches WHERE subject_id = ? ORDER BY created_at DESC LIMIT 1',
+                [subjectId]
+            );
+
+            if (lastBatch.length > 0) {
+                const lastInstructorId = lastBatch[0].instructor_id;
+                const lastIndex = eligibleInstructors.findIndex(i => i.id === lastInstructorId);
+
+                if (lastIndex !== -1) {
+                    // Pick the next one in the list, wrapping around
+                    const nextIndex = (lastIndex + 1) % eligibleInstructors.length;
+                    selectedInstructor = eligibleInstructors[nextIndex];
+                }
+            }
+
+            const instructorId = selectedInstructor.id;
+            const subjectName = selectedInstructor.subject_name;
+
+            console.log(`[BatchService] Round-Robin: Last was ${lastBatch.length > 0 ? lastBatch[0].instructor_id : 'None'} -> Next is ${instructorId}`);
 
             // Create new batch for the qualified instructor
-            const batchName = `${subjectName} - Auto Batch ${Date.now()}`;
+            const batchName = `${subjectName} - Batch ${Date.now()}`;
             const [result] = await this.pool.query(
                 'INSERT INTO batches (subject_id, instructor_id, name, student_count, max_students) VALUES (?, ?, ?, 1, 30)',
                 [subjectId, instructorId, batchName]

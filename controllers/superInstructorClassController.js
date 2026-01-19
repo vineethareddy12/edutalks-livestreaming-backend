@@ -257,7 +257,8 @@ exports.startClass = async (req, res) => {
                     student.email,
                     student.name,
                     subjectName,
-                    instructors[0].name
+                    instructors[0].name,
+                    id
                 );
             }
         }
@@ -345,7 +346,7 @@ exports.startImmediateClass = async (req, res) => {
                     `, [grade]);
 
                     for (const student of students) {
-                        emailService.sendClassStartedEmail(student.email, student.name, subjectName, instructorName);
+                        emailService.sendClassStartedEmail(student.email, student.name, subjectName, instructorName, classId);
                     }
                 }
             } catch (notifyErr) {
