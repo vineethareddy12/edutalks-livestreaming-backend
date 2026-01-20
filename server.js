@@ -406,6 +406,40 @@ io.on('connection', (socket) => {
         io.to(room).emit('unlock_all_mics');
     });
 
+    // --- Screen Share Permission Logic ---
+    socket.on('admin_stop_screen_share', (data) => {
+        const room = getRoomName(data.classId, socket.classType);
+        if (room) io.to(room).emit('force_stop_screen_share', { studentId: data.studentId });
+    });
+
+    socket.on('admin_stop_all_screen_shares', (data) => {
+        const room = getRoomName(data.classId, socket.classType);
+        if (!room) return;
+        // Lock screen share globally
+        if (!roomStates[room]) roomStates[room] = {};
+        roomStates[room].screenLocked = true;
+        io.to(room).emit('screen_status', { locked: true });
+
+        // Force stop for everyone
+        socket.to(room).emit('force_stop_all_screen_share');
+    });
+
+    socket.on('admin_grant_screen_share', (data) => {
+        const room = getRoomName(data.classId, socket.classType);
+        if (room) io.to(room).emit('grant_screen_share_permission', { studentId: data.studentId });
+    });
+
+    socket.on('admin_unlock_all_screen_shares', (data) => {
+        const room = getRoomName(data.classId, socket.classType);
+        if (!room) return;
+        // Unlock screen share globally
+        if (!roomStates[room]) roomStates[room] = {};
+        roomStates[room].screenLocked = false;
+        io.to(room).emit('screen_status', { locked: false });
+
+        io.to(room).emit('unlock_all_screen_shares');
+    });
+
 });
 
 startServer();
