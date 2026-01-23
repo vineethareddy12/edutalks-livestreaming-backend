@@ -96,6 +96,9 @@ async function startServer() {
         const { startStatusService } = require('./services/statusService');
         startStatusService(pool, io);
 
+        const { initScheduledJobs } = require('./services/schedulerService');
+        initScheduledJobs(pool);
+
         // 4. Configure Routes
         // Ensure upload directories exist
         const uploadDirs = ['uploads', 'uploads/notes', 'uploads/exams', 'uploads/doubts'];

@@ -14,7 +14,7 @@ const loginUrl = `${process.env.FRONTEND_URL || 'https://www.eduwallah.work.gd'}
 const sendEmail = async (to, subject, html) => {
     try {
         await transporter.sendMail({
-            from: `"EduTalks Admin" <${process.env.EMAIL_USER}>`,
+            from: `"EduTalks Live Streaming" <${process.env.EMAIL_USER}>`,
             to,
             subject,
             html
@@ -199,4 +199,39 @@ exports.sendDoubtResolvedNotification = async (studentEmail, studentName, doubtT
     await sendEmail(studentEmail, subject, html);
 };
 
+exports.sendDailyReminderEmail = async (userEmail, name) => {
+    const websiteUrl = process.env.FRONTEND_URL || 'https://www.eduwallah.work.gd';
+    const subject = `🔴 Experience LIVE Learning like Never Before on EduTalks! 🚀`;
+    const html = `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="background-color: #EE1D23; padding: 25px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">Live Streaming on EduTalks</h1>
+            </div>
+            <div style="padding: 35px 30px;">
+                <h2 style="color: #2d3748; margin-top: 0;">Good Morning, ${name}! ☀️</h2>
+                
+                <p style="color: #4a5568; line-height: 1.6; font-size: 16px;">
+                    Unlock your potential with our cutting-edge <b>Live Streaming Classes</b>. 
+                    Connect with expert instructors, interact in real-time, and elevate your learning journey today!
+                </p>
 
+                <div style="background-color: #fff5f5; border-left: 5px solid #EE1D23; padding: 20px; margin: 25px 0; border-radius: 4px;">
+                    <p style="margin: 0; color: #742a2a; font-size: 15px; font-style: italic;">
+                        "The beautiful thing about learning is that no one can take it away from you."
+                    </p>
+                </div>
+
+                <div style="text-align: center; margin-top: 35px; margin-bottom: 20px;">
+                    <a href="${websiteUrl}" style="background-color: #EE1D23; color: white; padding: 16px 32px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(238, 29, 35, 0.4); transition: transform 0.2s;">
+                        🚀 Visit EduTalks Now
+                    </a>
+                </div>
+            </div>
+            <div style="background-color: #f7fafc; padding: 20px; text-align: center; font-size: 12px; color: #a0aec0; border-top: 1px solid #edf2f7;">
+                <p>&copy; ${new Date().getFullYear()} EduTalks. All rights reserved.</p>
+                <p>Igniting Minds, One Live Stream at a Time.</p>
+            </div>
+        </div>
+    `;
+    await sendEmail(userEmail, subject, html);
+};
