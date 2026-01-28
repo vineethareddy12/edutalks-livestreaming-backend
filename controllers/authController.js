@@ -11,14 +11,14 @@ exports.login = async (req, res) => {
         );
 
         if (users.length === 0) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: 'Email address not found. Please register or check your email.' });
         }
 
         const user = users[0];
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({ message: 'Incorrect password. Please try again.' });
         }
 
         // Check Active Status
@@ -98,7 +98,7 @@ exports.register = async (req, res) => {
         // Check if user exists
         const [existing] = await req.app.locals.db.query('SELECT * FROM users WHERE email = ?', [email]);
         if (existing.length > 0) {
-            return res.status(400).json({ message: 'User already exists' });
+            return res.status(400).json({ message: 'An account with this email already exists. Please login instead.' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -114,7 +114,7 @@ exports.register = async (req, res) => {
 
         // Get Role ID
         const [roles] = await req.app.locals.db.query('SELECT id FROM roles WHERE name = ?', [requestedRole]);
-        if (roles.length === 0) return res.status(400).json({ message: 'Invalid role' });
+        if (roles.length === 0) return res.status(400).json({ message: 'The selected account role is invalid.' });
         const roleId = roles[0].id;
 
         // Determine Active Status

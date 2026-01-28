@@ -445,7 +445,7 @@ const studentController = {
             // Check if email is taken by another user
             const [existing] = await db.query('SELECT id FROM users WHERE email = ? AND id != ?', [email, studentId]);
             if (existing.length > 0) {
-                return res.status(400).json({ message: 'Email already exists' });
+                return res.status(400).json({ message: 'This email is already taken by another user. Please use a different email.' });
             }
 
             // Update user
