@@ -52,7 +52,8 @@ const dbDetails = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    timezone: '+00:00'
+    timezone: '+00:00',
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
 };
 
 /* -------------------- ROUTES -------------------- */
@@ -221,15 +222,22 @@ async function startServer() {
             res.status(500).json({ error: err.message });
         });
 
-        const PORT = process.env.PORT || 5000;
-        httpServer.listen(PORT, () => {
-            console.log(`🚀 Server running on port ${PORT}`);
-        });
+        if (process.env.NODE_ENV !== 'production') {
+            const PORT = process.env.PORT || 5000;
+            httpServer.listen(PORT, () => {
+                console.log(`🚀 Server running on port ${PORT}`);
+            });
+        }
 
     } catch (err) {
         console.error('❌ Server failed:', err);
-        process.exit(1);
+        // Only exit in dev environment
+        if (process.env.NODE_ENV !== 'production') {
+            process.exit(1);
+        }
     }
 }
 
 startServer();
+
+module.exports = app;
