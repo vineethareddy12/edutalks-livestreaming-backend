@@ -246,8 +246,8 @@ async function processNotificationQueue(pool) {
                     <p>Dear ${notification.name},</p>
                     <p>${notification.message}</p>
                     <br>
-                    <p>Login to EduTalks to view your tournaments.</p>
-                    <p>Best regards,<br>EduTalks Team</p>
+                    <p>Login to LearnPulse to view your tournaments.</p>
+                    <p>Best regards,<br>LearnPulse Team</p>
                 `;
                 emailSent = await sendEmailNotification(
                     notification.email,
