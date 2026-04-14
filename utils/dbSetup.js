@@ -4,11 +4,14 @@ const { SchemaManager } = require('../services/schemaManager');
 const { AdminSeeder } = require('./adminSeeder');
 
 const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST || process.env.MYSQLHOST,
+    user: process.env.DB_USER || process.env.MYSQLUSER,
+    password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD,
+    port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
     multipleStatements: true,
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
+    ssl: {
+        rejectUnauthorized: false
+    }
 };
 
 async function setup() {
@@ -83,7 +86,9 @@ async function setup() {
 
     } catch (error) {
         console.error('❌ Error in database setup:', error);
-        process.exit(1);
+        if (process.env.NODE_ENV !== 'production') {
+            process.exit(1);
+        }
     }
 }
 

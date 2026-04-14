@@ -48,12 +48,15 @@ app.use(express.urlencoded({ extended: true }));
 
 /* -------------------- DB CONFIG -------------------- */
 const dbDetails = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: process.env.DB_HOST || process.env.MYSQLHOST,
+    user: process.env.DB_USER || process.env.MYSQLUSER,
+    password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD,
+    database: process.env.DB_NAME || process.env.MYSQLDATABASE,
+    port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
     timezone: '+00:00',
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
+    ssl: {
+        rejectUnauthorized: false
+    }
 };
 
 /* -------------------- ROUTES -------------------- */
@@ -232,7 +235,9 @@ async function startServer() {
     } catch (err) {
         console.error('❌ Server failed:', err);
         // Only exit in dev environment
-        if (process.env.NODE_ENV !== 'production') {
+        if (process.env.NODE_ENV !== 'production' || process.env.VERCEL) {
+            console.log("Skipping process.exit in serverless environment");
+        } else {
             process.exit(1);
         }
     }
