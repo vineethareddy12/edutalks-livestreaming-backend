@@ -217,7 +217,7 @@ async function startServer() {
         app.use('/api/doubts', doubtRoutes);
 
         app.get('/', (req, res) => {
-            res.send('EduTalks API is running');
+            res.send('LearnPulse API is running');
         });
 
         app.use((err, req, res, next) => {
