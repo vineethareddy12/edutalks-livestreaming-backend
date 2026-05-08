@@ -293,7 +293,7 @@ exports.endClass = async (req, res) => {
 
         // Emit Socket Event for real-time updates
         if (req.app.locals.io) {
-            // Notify students in the room to redirect
+            // Notify students in the room to redirect (standardized name)
             req.app.locals.io.to(`si_class_${id}`).emit('si_class_ended', { classId: id });
             // Notify dashboards to refresh
             req.app.locals.io.emit('si_class_ended', { classId: id });

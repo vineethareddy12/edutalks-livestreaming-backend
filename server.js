@@ -99,47 +99,51 @@ io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
     socket.on('join_class', async (data) => {
-        const { classId, userId, classType = 'regular', userName = 'Unknown', role = 'Student' } = data || {};
-        const room = getRoomName(classId, classType);
-        if (!room) return;
+        const { classId, userId, userName = 'Unknown', role = 'Student', classType = 'regular' } = data || {};
+        
+        // Standardize room names: regular_class_{id} or si_class_{id}
+        const roomType = classType === 'super' || classType === 'si' ? 'si' : 'regular';
+        const room = `${roomType}_class_${classId}`;
+        
+        if (!classId) return;
 
-        socket.join(room);
-
+        await socket.join(room);
+        
+        // Store user data in socket for easy retrieval
         socket.userId = userId;
         socket.classId = classId;
-        socket.classType = classType;
+        socket.classType = roomType;
         socket.userName = userName;
         socket.role = role;
-
+        socket.data = { userId, userName, role, classId, classType: roomType, room };
+        
+        // Attendance logging
         const db = app.locals.db;
-
         try {
             if (db && userId) {
-                const query = classType === 'super'
+                const query = roomType === 'si'
                     ? 'INSERT INTO live_class_attendance (super_class_id, user_id, class_type) VALUES (?, ?, ?)'
                     : 'INSERT INTO live_class_attendance (class_id, user_id, class_type) VALUES (?, ?, ?)';
-
-                await db.query(query, [classId, userId, classType]);
+                await db.query(query, [classId, userId, roomType]);
             }
         } catch (err) {
             console.error("Attendance Error:", err);
         }
 
+        console.log(`User ${userName} (${role}) joined room: ${room}`);
+
+        // Notify others
         socket.to(room).emit('user_joined', { userId, userName, role });
 
+        // Broadcast updated member list to everyone in the room
         const sockets = await io.in(room).fetchSockets();
-        const members = [...new Map(
-            sockets
-                .filter(s => s.userId)
-                .map(s => [s.userId, {
-                    userId: s.userId,
-                    userName: s.userName,
-                    role: s.role
-                }])
-        ).values()];
+        const members = sockets
+            .filter(s => s.data && s.data.userId)
+            .map(s => s.data);
 
         io.to(room).emit('current_users', members);
 
+        // Sync room state (whiteboard, locks, etc.)
         if (roomStates[room]) {
             Object.entries(roomStates[room]).forEach(([key, value]) => {
                 socket.emit(key, value);
@@ -148,42 +152,37 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', async () => {
-        const { userId, classId, classType } = socket;
-        const room = getRoomName(classId, classType);
+        const { userId, classId, classType, userName } = socket;
+        if (!classId || !userId) return;
 
-        if (room && userId) {
-            socket.to(room).emit('user_left', { userId });
+        const room = `${classType}_class_${classId}`;
+        console.log(`User ${userName} disconnected from room: ${room}`);
 
-            const sockets = await io.in(room).fetchSockets();
-            const members = [...new Map(
-                sockets
-                    .filter(s => s.userId)
-                    .map(s => [s.userId, {
-                        userId: s.userId,
-                        userName: s.userName,
-                        role: s.role
-                    }])
-            ).values()];
+        socket.to(room).emit('user_left', { userId });
 
-            io.to(room).emit('current_users', members);
+        const sockets = await io.in(room).fetchSockets();
+        const members = sockets
+            .filter(s => s.data && s.data.userId)
+            .map(s => s.data);
 
-            try {
-                const db = app.locals.db;
-                if (db) {
-                    const query = classType === 'super'
-                        ? 'UPDATE live_class_attendance SET left_at = CURRENT_TIMESTAMP WHERE super_class_id = ? AND user_id = ? AND left_at IS NULL'
-                        : 'UPDATE live_class_attendance SET left_at = CURRENT_TIMESTAMP WHERE class_id = ? AND user_id = ? AND left_at IS NULL';
+        io.to(room).emit('current_users', members);
 
-                    await db.query(query, [classId, userId]);
-                }
-            } catch (err) {
-                console.error("Disconnect Update Error:", err);
+        try {
+            const db = app.locals.db;
+            if (db) {
+                const query = classType === 'si'
+                    ? 'UPDATE live_class_attendance SET left_at = CURRENT_TIMESTAMP WHERE super_class_id = ? AND user_id = ? AND left_at IS NULL'
+                    : 'UPDATE live_class_attendance SET left_at = CURRENT_TIMESTAMP WHERE class_id = ? AND user_id = ? AND left_at IS NULL';
+
+                await db.query(query, [classId, userId]);
             }
+        } catch (err) {
+            console.error("Disconnect Update Error:", err);
         }
     });
 
     socket.on('send_message', (data) => {
-        const room = getRoomName(data.classId, socket.classType);
+        const room = `${socket.classType}_class_${socket.classId}`;
         if (room) io.to(room).emit('receive_message', data);
     });
 });
