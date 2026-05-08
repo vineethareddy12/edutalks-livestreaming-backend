@@ -32,8 +32,8 @@ const studentController = {
                 db.query(`
                     SELECT COUNT(DISTINCT lc.id) as count 
                     FROM live_classes lc 
-                    JOIN student_batches sb ON lc.instructor_id = (SELECT instructor_id FROM batches WHERE id = sb.batch_id)
-                        AND lc.subject_id = (SELECT subject_id FROM batches WHERE id = sb.batch_id)
+                    JOIN batches b ON lc.instructor_id = b.instructor_id AND lc.subject_id = b.subject_id
+                    JOIN student_batches sb ON b.id = sb.batch_id
                     WHERE sb.student_id = ? AND lc.status = "live"
                 `, [studentId]),
 
@@ -141,7 +141,7 @@ const studentController = {
                 `, [studentId])
             ]);
 
-            const processedTournaments = tournamentResults.map(t => {
+            const processedTournaments = (tournamentResults || []).map(t => {
                 let totalMarks = 100;
                 try {
                     const q = typeof t.questions === 'string' ? JSON.parse(t.questions) : t.questions;
@@ -164,7 +164,7 @@ const studentController = {
                 };
             });
 
-            const allResults = [...examResults.map(r => ({
+            const allResults = [...(examResults || []).map(r => ({
                 ...r,
                 score: r.reviewed_score !== null ? r.reviewed_score : r.auto_score
             })), ...processedTournaments];
@@ -184,18 +184,18 @@ const studentController = {
                 course_name: courseName,
                 displayClassName,
                 stats: {
-                    liveNow: (regularClassesCount[0].count || 0) + (siClassesCount[0].count || 0) + (liveTournamentsCount[0].count || 0),
-                    upcomingExams: (examsCount[0].count || 0) + (upcomingTournamentsCount[0].count || 0),
-                    studyMaterials: notesCount[0].count || 0
+                    liveNow: (regularClassesCount?.[0]?.count || 0) + (siClassesCount?.[0]?.count || 0) + (liveTournamentsCount?.[0]?.count || 0),
+                    upcomingExams: (examsCount?.[0]?.count || 0) + (upcomingTournamentsCount?.[0]?.count || 0),
+                    studyMaterials: notesCount?.[0]?.count || 0
                 },
-                batches,
-                upcomingClasses,
-                liveTournaments,
-                recentResults
+                batches: batches || [],
+                upcomingClasses: upcomingClasses || [],
+                liveTournaments: liveTournaments || [],
+                recentResults: recentResults || []
             });
 
         } catch (err) {
-            console.error(err);
+            console.error("Dashboard Error:", err);
             res.status(500).json({ message: 'Server error' });
         }
     },

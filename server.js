@@ -191,8 +191,15 @@ io.on('connection', (socket) => {
 /* -------------------- START SERVER -------------------- */
 async function startServer() {
     try {
-        await setup();
-        console.log('✓ Database ready');
+        const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+
+        // Only run heavy database setup/seeding in development or if explicitly requested
+        if (!isProduction || process.env.RUN_SETUP === 'true') {
+            await setup();
+            console.log('✓ Database setup complete');
+        } else {
+            console.log('✓ Production mode: Skipping heavy database setup');
+        }
 
         const pool = mysql.createPool(dbDetails);
         app.locals.db = pool;
