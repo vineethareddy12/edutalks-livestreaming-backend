@@ -16,7 +16,8 @@ const httpServer = createServer(app);
 const allowedOrigins = [
     process.env.FRONTEND_URL,
     "http://localhost:5173",
-    "https://www.eduwallah.work.gd"
+    "https://www.eduwallah.work.gd",
+    "https://learnpulse-live.vercel.app"
 ].filter(Boolean);
 
 const corsOptions = {
@@ -56,7 +57,12 @@ const dbDetails = {
     timezone: '+00:00',
     ssl: {
         rejectUnauthorized: false
-    }
+    },
+    connectionLimit: 50,
+    waitForConnections: true,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000
 };
 
 /* -------------------- ROUTES -------------------- */
